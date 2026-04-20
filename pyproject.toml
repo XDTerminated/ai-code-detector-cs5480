@@ -1,7 +1,65 @@
 [project]
 name = "ai-code-detector-cs5480"
 version = "0.1.0"
-description = "Add your description here"
+description = "Binary classification of Python source code as human-written or AI-generated using fine-tuned CodeBERT."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+authors = [
+    { name = "Sayam Gupta" },
+    { name = "Kyle Marut" },
+    { name = "Karthik Thota" },
+    { name = "Aria Varwig" },
+]
+license = { text = "MIT" }
+dependencies = [
+    "datasets>=3",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.4",
+    "pandas>=3.0.2",
+    "scikit-learn>=1.8.0",
+    "seaborn>=0.13.2",
+    "torch>=2.11.0",
+    "tqdm>=4.67.3",
+    "transformers>=5.5.4",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+    "ruff>=0.15.11",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_code_detector"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "scripts"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501", # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ai_code_detector"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
