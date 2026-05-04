@@ -29,8 +29,7 @@ ai-code-detector-cs5480/
 │   ├── train.py                 # Phase 3: fine-tune CodeBERT
 │   ├── evaluate.py              # Phase 4: test-set metrics + plots
 │   ├── error_analysis.py        # Phase 5: misclassified-sample dump
-│   ├── hyperparameter_search.py # Phase 4: small grid search
-│   └── ablation_max_length.py   # Phase 5: max_length ablation
+│   └── show_results.py          # pretty-print metrics + splice into report
 ├── src/
 │   └── ai_code_detector/
 │       ├── config.py               # paths, constants, seeds, model + training defaults
@@ -209,16 +208,6 @@ Writes:
 - `reports/figures/baseline_test_per_class_metrics.png` — P/R/F1 bars.
 - `reports/figures/baseline_training_curves.png` — loss + val metrics vs epoch.
 
-### Phase 4 — small hyperparameter sweep (optional, expensive)
-
-```bash
-uv run python scripts/hyperparameter_search.py --configs 3
-```
-
-Each config is a full fine-tuning run, so this is opt-in. Results land in
-`reports/metrics/sweep_results.csv` (sorted by val macro-F1) and per-config
-checkpoints under `models/sweep/`.
-
 ### Phase 5 — error analysis
 
 ```bash
@@ -234,14 +223,14 @@ Writes:
   rate per class, mean confidence on errors, length distribution comparison
   vs. correct predictions.
 
-### Phase 5 — max-length ablation (optional, expensive)
+### Summarize results / update the report
 
 ```bash
-uv run python scripts/ablation_max_length.py --lengths 128 256 512
+uv run python scripts/show_results.py --update-baseline-md
 ```
 
-One full fine-tune per length value. Output table at
-`reports/metrics/ablation_max_length.csv`.
+Pretty-prints every metric/error JSON under `reports/metrics/` and splices
+the test-set metrics table into [`reports/results_baseline.md`](reports/results_baseline.md).
 
 ---
 
@@ -261,8 +250,5 @@ One full fine-tune per length value. Output table at
 - [x] **Phase 2** — CodeBERT tokenization (HuggingFace `DatasetDict`).
 - [x] **Phase 3** — CodeBERT fine-tuning loop with BCE loss + AdamW.
 - [x] **Phase 4** — accuracy / per-class P/R/F1 / AUC-ROC / confusion matrix.
-- [x] **Phase 4 (HP)** — opt-in grid search over LR / batch / epochs.
 - [x] **Phase 5** — misclassification dump + length-stratified error stats.
-- [x] **Phase 5 (ablation)** — `max_length` ∈ {128, 256, 512} ablation.
-- [ ] Phase 6 — additional ablations (input format / comment-stripping).
-- [ ] Phase 7 — final report and poster.
+- [ ] Phase 6 — final report and poster.

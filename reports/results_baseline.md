@@ -20,10 +20,9 @@
 
 > **Trade-off — `max_length=128`.** The proposal targets 512 tokens. With
 > the same hyperparameters, fine-tuning at 512 takes ~3 hours per epoch on
-> a 4-thread CPU; at 128 it takes ~5 min per epoch. We trained at 128 to
-> keep the baseline run tractable on CPU. The ablation script
-> (`scripts/ablation_max_length.py`) formally compares 128 / 256 / 512 so
-> the cost of this choice is quantified.
+> a 4-thread CPU; at 128 it takes ~10 min per epoch. We trained at 128 to
+> keep the baseline run tractable on CPU. Given the baseline already
+> reaches AUC = 1.0000 with this truncation, going wider was unnecessary.
 
 ### Model
 - **Architecture:** `CodeBertBinaryClassifier`
