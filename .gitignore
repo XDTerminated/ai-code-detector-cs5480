@@ -30,6 +30,7 @@ ENV/
 .uv_cache/
 
 # ---------- Editors / IDEs ----------
+.claude/
 .vscode/
 .idea/
 *.swp
@@ -73,3 +74,9 @@ logs/
 # HuggingFace cache (when pinned locally)
 .cache/
 hf_cache/
+
+# ---------- Project: ad-hoc training logs ----------
+# Each run streams to a log file in the project root; do not commit them.
+training_*.log
+sweep_*.log
+ablation_*.log
