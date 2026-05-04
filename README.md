@@ -16,23 +16,41 @@ ai-code-detector-cs5480/
 │   ├── raw/          # extracted HumanVSAI_CodeDataset (gitignored)
 │   ├── interim/      # filtered Python-only subset (gitignored)
 │   └── processed/    # splits + tokenized Arrow datasets (gitignored)
+├── models/                      # trained checkpoints (gitignored)
+│   └── baseline/                # default training output
 ├── reports/
-│   └── figures/      # EDA plots
+│   ├── figures/                 # EDA + evaluation plots
+│   ├── metrics/                 # JSON metric bundles, error CSVs
+│   └── results_baseline.md      # human-readable run summary
 ├── scripts/
-│   ├── prepare_dataset.py   # Phase 1: load → normalize → filter → split
-│   ├── analyze_dataset.py   # Phase 1: EDA tables + plots
-│   └── tokenize_dataset.py  # Phase 2: CodeBERT tokenization
+│   ├── prepare_dataset.py       # Phase 1: load → normalize → filter → split
+│   ├── analyze_dataset.py       # Phase 1: EDA tables + plots
+│   ├── tokenize_dataset.py      # Phase 2: CodeBERT tokenization
+│   ├── train.py                 # Phase 3: fine-tune CodeBERT
+│   ├── evaluate.py              # Phase 4: test-set metrics + plots
+│   ├── error_analysis.py        # Phase 5: misclassified-sample dump
+│   ├── hyperparameter_search.py # Phase 4: small grid search
+│   └── ablation_max_length.py   # Phase 5: max_length ablation
 ├── src/
 │   └── ai_code_detector/
-│       ├── config.py               # paths, constants, seeds, model name
+│       ├── config.py               # paths, constants, seeds, model + training defaults
 │       ├── logging_utils.py
 │       ├── data/
 │       │   ├── loading.py          # raw-file IO + schema normalization
 │       │   ├── filtering.py        # Python-only filter, dedupe, clean
 │       │   ├── splitting.py        # stratified train/val/test split
 │       │   └── torch_dataset.py    # PyTorch Dataset + DataLoader builders
-│       └── features/
-│           └── tokenization.py     # CodeBERT tokenization
+│       ├── features/
+│       │   └── tokenization.py     # CodeBERT tokenization
+│       ├── models/
+│       │   └── classifier.py       # CodeBERT + linear head + sigmoid (BCE)
+│       ├── training/
+│       │   ├── loop.py             # AdamW + linear warmup, val each epoch, early stop
+│       │   ├── metrics.py          # accuracy, P/R/F1, AUC-ROC, confusion matrix
+│       │   └── checkpoint.py       # safetensors save/load + tokenizer + history
+│       └── evaluation/
+│           ├── predict.py          # aligned (probs, preds, labels) inference
+│           └── plots.py            # training curves, CM heatmap, ROC, per-class bars
 ├── pyproject.toml
 └── uv.lock
 ```
@@ -136,6 +154,95 @@ This will:
 A sequence-length summary is printed so you can confirm the truncation rate
 is acceptable before starting training.
 
+### Phase 3 — fine-tune CodeBERT
+
+```bash
+uv run python scripts/train.py
+```
+
+Defaults (set in [`src/ai_code_detector/config.py`](src/ai_code_detector/config.py)):
+
+| Hyperparameter        | Value           |
+|-----------------------|-----------------|
+| Optimizer             | AdamW           |
+| Learning rate         | 2e-5            |
+| Weight decay          | 0.01 (excluding bias / LayerNorm) |
+| Warmup ratio          | 0.10 (linear warmup → linear decay) |
+| Batch size (train)    | 16              |
+| Batch size (eval)     | 32              |
+| Epochs                | 3               |
+| Gradient clip norm    | 1.0             |
+| Classifier dropout    | 0.10            |
+| Decision threshold    | 0.50            |
+| Early-stop patience   | 2 epochs without val-loss improvement |
+| Loss                  | `BCEWithLogitsLoss` (single-logit head per the proposal) |
+
+The script writes the **best-by-validation-loss** checkpoint to
+`models/baseline/`, including:
+
+- `model.safetensors` — model weights.
+- `training_config.json` — every hyperparameter used.
+- `training_history.json` — per-epoch train/val loss + metrics.
+- `tokenizer/` — the CodeBERT tokenizer (so inference is offline).
+
+CPU note: a full 3-epoch run at the proposal's `max_length=512` takes
+~2–3 hours on a modern 4-thread laptop. For development we re-tokenize at
+`max_length=256` (drops ~10–15% of the longest snippets but cuts training
+time to ~30–60 min):
+
+```bash
+uv run python scripts/tokenize_dataset.py --max-length 256 --out-dir data/processed/tokenized_l256
+uv run python scripts/train.py --tokenized-dir data/processed/tokenized_l256
+```
+
+### Phase 4 — evaluate on the held-out test split
+
+```bash
+uv run python scripts/evaluate.py --checkpoint-dir models/baseline
+```
+
+Writes:
+
+- `reports/metrics/baseline_test.json` — full metric bundle.
+- `reports/figures/baseline_test_confusion_matrix{,_norm}.png` — raw and row-normalized.
+- `reports/figures/baseline_test_roc_curve.png` — ROC curve with AUC.
+- `reports/figures/baseline_test_per_class_metrics.png` — P/R/F1 bars.
+- `reports/figures/baseline_training_curves.png` — loss + val metrics vs epoch.
+
+### Phase 4 — small hyperparameter sweep (optional, expensive)
+
+```bash
+uv run python scripts/hyperparameter_search.py --configs 3
+```
+
+Each config is a full fine-tuning run, so this is opt-in. Results land in
+`reports/metrics/sweep_results.csv` (sorted by val macro-F1) and per-config
+checkpoints under `models/sweep/`.
+
+### Phase 5 — error analysis
+
+```bash
+uv run python scripts/error_analysis.py --checkpoint-dir models/baseline
+```
+
+Writes:
+
+- `reports/metrics/baseline_errors.csv` — top-N misclassified samples sorted
+  by model confidence (most-confident-but-wrong first; these are the most
+  diagnostic).
+- `reports/metrics/baseline_error_summary.json` — aggregate stats: error
+  rate per class, mean confidence on errors, length distribution comparison
+  vs. correct predictions.
+
+### Phase 5 — max-length ablation (optional, expensive)
+
+```bash
+uv run python scripts/ablation_max_length.py --lengths 128 256 512
+```
+
+One full fine-tune per length value. Output table at
+`reports/metrics/ablation_max_length.csv`.
+
 ---
 
 ## Reproducibility
@@ -147,11 +254,15 @@ is acceptable before starting training.
 
 ---
 
-## Next steps (Phases 3+)
+## Roadmap
 
-- Phase 3: CodeBERT classifier + training loop (`src/ai_code_detector/models/`,
-  `scripts/train.py`).
-- Phase 4: Evaluation (accuracy, per-class P/R/F1, AUC-ROC, confusion matrix).
-- Phase 5: Hyperparameter tuning.
-- Phase 6: Ablations (input format, snippet length) and error analysis.
-- Phase 7: Final report and poster.
+- [x] **Phase 1** — load + clean + Python-only filter + stratified split.
+- [x] **Phase 1 EDA** — class balance, code-length distributions, duplicates.
+- [x] **Phase 2** — CodeBERT tokenization (HuggingFace `DatasetDict`).
+- [x] **Phase 3** — CodeBERT fine-tuning loop with BCE loss + AdamW.
+- [x] **Phase 4** — accuracy / per-class P/R/F1 / AUC-ROC / confusion matrix.
+- [x] **Phase 4 (HP)** — opt-in grid search over LR / batch / epochs.
+- [x] **Phase 5** — misclassification dump + length-stratified error stats.
+- [x] **Phase 5 (ablation)** — `max_length` ∈ {128, 256, 512} ablation.
+- [ ] Phase 6 — additional ablations (input format / comment-stripping).
+- [ ] Phase 7 — final report and poster.
