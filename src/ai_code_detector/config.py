@@ -108,3 +108,40 @@ MAX_SEQUENCE_LENGTH: int = 512
 # HuggingFace datasets caches intermediate artifacts here so re-runs are fast
 # and stay inside the repo (nothing leaks into ~/.cache).
 HF_CACHE_DIR: Path = PROJECT_ROOT / ".cache" / "huggingface"
+
+# ---------------------------------------------------------------------------
+# Model architecture
+# ---------------------------------------------------------------------------
+# Single-logit head (per the proposal): produces one scalar per sample which
+# is fed into BCEWithLogitsLoss at training time and through a sigmoid at
+# inference. This matches the proposal's "fully connected layer with sigmoid
+# activation function ... binary cross-entropy loss" exactly.
+NUM_CLASSES: int = 2
+CLASSIFIER_DROPOUT: float = 0.1
+
+# ---------------------------------------------------------------------------
+# Training defaults
+# ---------------------------------------------------------------------------
+# Defaults are taken from the original CodeBERT paper's fine-tuning recipe
+# and the standard RoBERTa-classification recipe. Override on the CLI for
+# sweeps.
+DEFAULT_LEARNING_RATE: float = 2e-5
+DEFAULT_WEIGHT_DECAY: float = 0.01
+DEFAULT_BATCH_SIZE: int = 16
+DEFAULT_EVAL_BATCH_SIZE: int = 32
+DEFAULT_NUM_EPOCHS: int = 3
+DEFAULT_WARMUP_RATIO: float = 0.1
+DEFAULT_GRADIENT_CLIP_NORM: float = 1.0
+DEFAULT_EARLY_STOP_PATIENCE: int = 2  # epochs without val-loss improvement
+
+# Decision threshold applied to sigmoid(logit) at inference. 0.5 is the
+# Bayes-optimal threshold for a balanced loss; can be re-tuned on the
+# validation set during evaluation.
+DECISION_THRESHOLD: float = 0.5
+
+# ---------------------------------------------------------------------------
+# Output directories for trained artifacts and reports
+# ---------------------------------------------------------------------------
+MODELS_DIR: Path = PROJECT_ROOT / "models"
+BASELINE_MODEL_DIR: Path = MODELS_DIR / "baseline"
+METRICS_DIR: Path = REPORTS_DIR / "metrics"

@@ -1,0 +1,21 @@
+{
+  "n_test": 402,
+  "n_errors": 2,
+  "error_rate": 0.004975124378109453,
+  "errors_by_true_class": {
+    "human": 2,
+    "ai": 0
+  },
+  "errors_by_predicted_class": {
+    "human": 0,
+    "ai": 2
+  },
+  "mean_confidence_on_errors": 0.9991364479064941,
+  "median_confidence_on_errors": 0.9991364479064941,
+  "length_stats": {
+    "errors_n_chars_mean": 1726.5,
+    "correct_n_chars_mean": 451.91,
+    "errors_n_lines_mean": 73.5,
+    "correct_n_lines_mean": 19.285
+  }
+}
