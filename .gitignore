@@ -51,10 +51,6 @@ data/processed/*
 !data/interim/.gitkeep
 !data/processed/.gitkeep
 
-# ---------- Project: artifacts ----------
-reports/figures/*
-!reports/figures/.gitkeep
-
 # Model checkpoints and logs
 /models/
 /checkpoints/

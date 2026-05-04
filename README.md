@@ -47,9 +47,11 @@ ai-code-detector-cs5480/
 │       │   ├── loop.py             # AdamW + linear warmup, val each epoch, early stop
 │       │   ├── metrics.py          # accuracy, P/R/F1, AUC-ROC, confusion matrix
 │       │   └── checkpoint.py       # safetensors save/load + tokenizer + history
-│       └── evaluation/
-│           ├── predict.py          # aligned (probs, preds, labels) inference
-│           └── plots.py            # training curves, CM heatmap, ROC, per-class bars
+│       ├── evaluation/
+│       │   ├── predict.py          # aligned (probs, preds, labels) inference
+│       │   └── plots.py            # training curves, CM heatmap, ROC, per-class bars
+│       └── cli/
+│           └── classify.py         # classify a single code file as human or AI
 ├── pyproject.toml
 └── uv.lock
 ```
@@ -231,6 +233,23 @@ uv run python scripts/show_results.py --update-baseline-md
 
 Pretty-prints every metric/error JSON under `reports/metrics/` and splices
 the test-set metrics table into [`reports/results_baseline.md`](reports/results_baseline.md).
+
+### Classify your own code
+
+```bash
+uv run python -m ai_code_detector.cli.classify path/to/your_code.txt
+```
+
+Loads the trained baseline checkpoint from `models/baseline/` and prints
+the verdict (`human` / `ai`) plus `P(ai)` and `P(human)` for the snippet.
+Pass `--json` for machine-readable output, `--checkpoint-dir` to point at
+a different checkpoint, or `--threshold` to override the decision cutoff.
+
+Equivalent script-style invocation:
+
+```bash
+uv run python src/ai_code_detector/cli/classify.py path/to/your_code.txt
+```
 
 ---
 
