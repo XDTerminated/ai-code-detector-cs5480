@@ -26,7 +26,6 @@ env/
 ENV/
 
 # ---------- uv ----------
-# uv.lock is committed; the cache is not.
 .uv_cache/
 
 # ---------- Editors / IDEs ----------
@@ -45,7 +44,6 @@ ENV/
 Thumbs.db
 
 # ---------- Project: data ----------
-# Raw data must be downloaded per README; never commit it.
 data/raw/*
 data/interim/*
 data/processed/*
@@ -54,17 +52,16 @@ data/processed/*
 !data/processed/.gitkeep
 
 # ---------- Project: artifacts ----------
-# Reports figures are regenerated; keep dir but ignore contents.
 reports/figures/*
 !reports/figures/.gitkeep
 
 # Model checkpoints and logs
-models/
-checkpoints/
-runs/
-wandb/
-mlruns/
-logs/
+/models/
+/checkpoints/
+/runs/
+/wandb/
+/mlruns/
+/logs/
 *.ckpt
 *.pt
 *.pth
@@ -76,7 +73,6 @@ logs/
 hf_cache/
 
 # ---------- Project: ad-hoc training logs ----------
-# Each run streams to a log file in the project root; do not commit them.
 training_*.log
 sweep_*.log
 ablation_*.log
